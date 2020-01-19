@@ -1,24 +1,17 @@
 #!/bin/bash
 
-maxSize='1024'
 type1='.jpg'
-path=$(eval pwd)
-
+watermark=''
 read -p "Please input target folder path: " path
 echo "you chose path $path"
+read -p "Please input watermark words: " watermark
+echo "you input watermark $watermark"
 
 if [ -d "$path"];then
 	for imgs in $(ls $path | grep "$type1")
 	do
-		a=$(du $imgs)
-		crtSize=${a%	*}
-		if [ $crtSize -gt $maxSize ];then
-			echo $imgs
-			mogrify -quality 50 $path'/'$imgs
-		fi
+		convert -fill white -pointsize 24 -draw "text 10,15 $watermark " $imgs $imgs 
 	done
 else
         echo "$folderPath not exists"
 fi
-		
-
