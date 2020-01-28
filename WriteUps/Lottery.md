@@ -68,3 +68,13 @@
         `pip install githack`
 
     - 下载之后运行，发现报错“无效目录名称”，尚未找到解决办法，明天解决。
+
+    - 修改李姐姐的代码，从python2改成python3，引用库从 `urllib2` 变成 `urllib.request` ，修改其他各类语法区别，但是还是不行，最后虽然可以跑，但是只能创建一个新文件夹，爬不下来东西，而且报错 **“error: padding contained non-NUL”**
+
+    - 去李姐姐的git仓库里看issue，发现这个问题很早就有人提，但是始终没有人解决，只好暂时放弃李姐姐的。
+
+    - 在git上搜索其他项目，下载了另一个star数较高的githack，仍然是python2的代码，又是一顿改，这次能跑了，而且也爬下了.git目录，但是跟.git同级的其它文件却爬不下来，报错信息 
+    
+        **“raise TypeError("Can't mix strings and bytes in path components") from None TypeError: Can't mix strings and bytes in path components”**
+
+    上网查了一下，发现可能是字符串拼接的时候出了问题，但是即使我把拼接的各个参数全部强制转换成同一类型，仍然会报这个错误。
