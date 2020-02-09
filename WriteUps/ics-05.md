@@ -165,7 +165,7 @@
 
     成功拿到管理员权限，接下来考虑怎么拿flag：
 
-    看到 `preg_replace()` ，没跑儿了：
+    看到 `preg_replace()` ，没跑儿了(这个函数很有代表性，[这个链接要仔细看](https://www.jb51.net/article/145649.htm))：
 
         preg_replace( pattern , replacement , subject ) :
         当pre_replace的参数pattern输入/e的时候 ,参数replacement的代码当作PHP代码执行
