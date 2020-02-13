@@ -15,9 +15,9 @@
         prod = reduce(lambda a, b: a*b, n)
         for n_i, a_i in zip(n, a):
             p = prod // n_i
-            sum += a_i * modinv(p, n_i) * p
-        return int(sum % prod)
-    def modinv(a, m): return int(gmpy2.invert(gmpy2.mpz(a), gmpy2.mpz(m)))   
+            sum += a_i * modinv(p, n_i) * p 
+        return int(sum % prod)  
+    def modinv(a, m): return int(gmpy2.invert(gmpy2.mpz(a), gmpy2.mpz(m)))   #求 a 和 m 的乘法逆元
 
     with open("mayday.json") as dfile: 
         data = json.loads(dfile.read())  
