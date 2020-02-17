@@ -55,38 +55,41 @@
 - 按照大佬的思路，重新写了一下代码，核心思想就是用 `msg001` 和 `msg001.enc` 里的每一个元素的变换密钥拼出一个字符串，这个字符串就是目标密钥串：
 
     ```C
+    #pragma warning(disable:4996);
     #include <stdlib.h>
     #include <stdio.h>
     #include <string.h>
-    int main(int argc, char **argv)
+    int main(int argc, char** argv)
     {
         if (argc != 2)
-            {
-               	printf("USAGE: %s INPUT OUTPUT\n", argv[0]);
-                return 0;
-            }
-        FILE* input  = fopen(argv[1], "rb");  
-        char j=0;
+        {
+            printf("USAGE: %s INPUT OUTPUT\n", argv[0]);
+            return 0;
+        }
+        FILE* input = fopen(argv[1], "rb");
+        char j = 0;
         char c, p, t = 0;
         int i = 0;
-        int j = 0;
         char m[] = "Hi! This is only test message\n";  //msg001中的值
 
-        while ((p = fgetc(input)) != EOF) 
+        while (i<strlen(m))
         {
-            for (j=0;j<128;j++) //ASCII码全试一遍，总能找到一个对的代换
+            p = fgetc(input);
+            for (j = 0; j < 128; j++) //ASCII码全试一遍，总能找到一个对的代换
             {
-                c = (p - (j ^ t) - i*i) & 0xff; //从密文算明文
-                if(c == m[i])   //发现对上了，说明密钥碰对了
-                {   
+                c = (p - (j ^ t) - i * i) & 0xff; //从密文算明文
+                if (c == m[i])   //发现对上了，说明密钥碰对了
+                {
                     i++;    //试下一位
-                    printf("%c",j); //打印这一位密钥字符
+                    printf("%c", j); //打印这一位密钥字符
                     t = c;  //换密钥
                     break;  //试下一位
                 }
             }
-            return 0;
+
         }
+        return 0;
+    }
     ```
 
 - 得到结果密钥串为：
